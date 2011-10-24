@@ -18,7 +18,7 @@ class PaypalAccount < ActiveRecord::Base
         end
         # End Hack
 
-        ppx_response = payment.payment_method.provider.capture((100 * payment.amount).to_i, authorization.params["transaction_id"], :currency => payment.payment_method.preferred_currency)
+        ppx_response = payment.payment_method.provider.capture((100 * payment.amount).to_i, authorization.params["transaction_id"], :currency => currency)
         if ppx_response.success?
             record_log payment, ppx_response
             payment.complete
@@ -63,6 +63,7 @@ class PaypalAccount < ActiveRecord::Base
 
     def echeck?(payment)
         logs = payment.log_entries.all(:order => 'created_at DESC')
+
         logs.each do |log|
             details = YAML.load(log.details) # return the transaction details
             if details.params['payment_type'] == 'echeck'
