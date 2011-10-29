@@ -183,7 +183,7 @@ CheckoutController.class_eval do
     return unless params[:order][:payments_attributes]
     if params[:order][:coupon_code]
       @order.update_attributes(object_params)
-      @order.process_coupon_code
+      #@order.process_coupon_code
     end
     load_order
     payment_method = PaymentMethod.find(params[:order][:payments_attributes].first[:payment_method_id])
