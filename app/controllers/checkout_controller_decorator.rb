@@ -183,7 +183,10 @@ CheckoutController.class_eval do
     return unless params[:order][:payments_attributes]
     if params[:order][:coupon_code]
       @order.update_attributes(object_params)
-      #@order.process_coupon_code
+
+      if @order.respond_to?(:coupon_code) && @order.coupon_code.present?
+        fire_event('spree.checkout.coupon_code_added', :coupon_code => @order.coupon_code)
+      end
     end
     load_order
     payment_method = PaymentMethod.find(params[:order][:payments_attributes].first[:payment_method_id])
