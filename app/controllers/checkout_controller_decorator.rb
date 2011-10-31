@@ -271,6 +271,11 @@ CheckoutController.class_eval do
       # add correct tax amount by subtracting subtotal and shipping otherwise tax = 0 -> need to check adjustments.map
       opts[:tax] = (order.total*100).to_i - opts.slice(:subtotal, :shipping).values.sum
 
+    Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  PayPal subtotal #{opts[:subtotal]}")
+    Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  PayPal tax #{opts[:tax]}")
+    Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  PayPal shipping #{opts[:shipping]}")
+    Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  PayPal money #{opts[:money]}")
+
     if stage == "checkout"
       opts[:handling] = 0
 
