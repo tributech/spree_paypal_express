@@ -257,15 +257,32 @@ CheckoutController.class_eval do
       credits_total = credits.map {|i| i[:amount] * i[:quantity] }.sum
     end
 
+
+    #MASSIVE MYCHARMIES HACK
+    #Paypal express does NOT like negative subtotal. Which happens when we do free postage as the adjustment comes off the item_total rather than shipping
+    #Until I fix that I am going to hack this
+
+    subTotal = ((order.item_total * 100) + credits_total).to_i
+    shippingTotal = ((order.adjustments.map { |a| a.amount if a.source_type == 'Shipment' }.compact.sum) * 100 ).to_i
+
+    if (subTotal < 0)
+        subTotal += shippingTotal
+        #Need to fix up the credit amounts now too
+        items.concat [{:name => 'Free Postage', :description => 'Free Postage', :sku => 'free', :quantity => 1, :amount => shippingTotal }]
+        shippingTotal = 0
+    end
+
+    #end HACK
+
     opts = { #:return_url        => request.protocol + request.host_with_port + "/orders/#{order.number}/checkout/paypal_confirm?payment_method_id=#{payment_method}",
              :return_url        => "http://"  + request.host_with_port + "/orders/#{order.number}/checkout/paypal_confirm?payment_method_id=#{payment_method}",
              :cancel_return_url => "http://"  + request.host_with_port + "/orders/#{order.number}/edit",
              :order_id          => order.number,
              :custom            => order.number,
              :items             => items,
-             :subtotal          => ((order.item_total * 100) + credits_total).to_i,
+             :subtotal          => subTotal,
              :tax               => ((order.adjustments.map { |a| a.amount if ( a.source_type == 'Order' && a.label == 'Tax') }.compact.sum) * 100 ).to_i,
-             :shipping          => ((order.adjustments.map { |a| a.amount if a.source_type == 'Shipment' }.compact.sum) * 100 ).to_i,
+             :shipping          => shippingTotal,
              :money             => (order.total * 100 ).to_i }
              
       # add correct tax amount by subtracting subtotal and shipping otherwise tax = 0 -> need to check adjustments.map
@@ -360,6 +377,10 @@ CheckoutController.class_eval do
 
     msg = "#{I18n.t('gateway_error')}: #{text}"
     logger.error(msg)
+    Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  PayPal Error #{response.params['message']}")
+    Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  PayPal Error #{response.params['response_reason_text']}")
+    Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  PayPal Error #{response.message}")
+
     flash[:error] = msg
   end
 
