@@ -3,6 +3,12 @@ CheckoutController.class_eval do
 
   def paypal_checkout
     load_order
+
+    if (!@order.payment_required?)
+        complete_payment
+        return
+    end
+
     opts = all_opts(@order, params[:payment_method_id], 'checkout')
     opts.merge!(address_options(@order))
     @gateway = paypal_gateway
@@ -170,6 +176,19 @@ CheckoutController.class_eval do
   rescue ActiveMerchant::ConnectionError => e
     gateway_error I18n.t(:unable_to_connect_to_gateway)
     redirect_to edit_order_url(@order)
+  end
+
+  def complete_payment
+      #need to force checkout to complete state
+      until @order.state == "complete"
+        if @order.next!
+          @order.update!
+          state_callback(:after)
+        end
+      end
+
+      flash[:notice] = I18n.t(:order_processed_successfully)
+      redirect_to completion_route
   end
 
   private
