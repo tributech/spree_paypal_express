@@ -4,7 +4,9 @@ CheckoutController.class_eval do
   def paypal_checkout
     load_order
 
+    Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  Checking if Payment required")
     if (!@order.payment_required?)
+        Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  Payment not required")
         complete_payment
         return
     end
@@ -33,6 +35,14 @@ CheckoutController.class_eval do
 
   def paypal_payment
     load_order
+
+    Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  Checking if Payment required")
+    if (!@order.payment_required?)
+        Rails.logger.debug("\e[1;33mMyCharmies:\e[0m  Payment not required")
+        complete_payment
+        return
+    end
+
     opts = all_opts(@order,params[:payment_method_id], 'payment')
     opts.merge!(address_options(@order))
     @gateway = paypal_gateway
